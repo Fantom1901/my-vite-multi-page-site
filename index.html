@@ -76,31 +76,21 @@
       }
     }
   </style>
+  <script type="module" crossorigin src="/my-vite-multi-page-site/assets/var1-D_c_TUIC.js"></script>
 </head>
 <body class="text-gray-800">
 <div class="container mx-auto p-4 md:p-8">
   <header class="text-center mb-8">
     <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Интерактивный вариант заданий</h1>
-    <select
-      name="pages"
-      id=""
-    >
-      <option value="1">
-        <a href="/index.html">Вариант 1</a>
-      </option>
-
-      <option value="2">
-        <a href="/var2.html">Вариант 2</a>
-      </option>
-
-      <option value="3">
-        <a href="/var3.html">Вариант 3</a>
-      </option>
-
-      <option value="4">
-        <a href="/var4.html"></a>
-      </option>
+    <select name="pages" id="page-selector">
+      <option value="">Выберите страницу</option>
+      <option value="/index.html">Вариант 1</option>
+      <option value="/var2.html">Вариант 2</option>
+      <option value="/var3.html">Вариант 3</option>
+      <option value="/var4.html">Вариант 4</option>
     </select>
+
+
     <p class="text-lg text-gray-600 mt-2">Все расчеты выполнены с учетом <code class="bg-gray-200 text-gray-800 font-bold px-2 py-1 rounded"><span id="current-k-display">k = 3</span></code></p>
     <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
       <label for="k-input" class="text-gray-700 font-semibold">Изменить k:</label>
