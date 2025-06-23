@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Интерактивный вариант заданий (k=3)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chosen Palette: Warm Neutrals -->
+  <!-- Application Structure Plan: Я разработал структуру в виде интерактивной панели управления (dashboard). Центральным элементом является область для отображения одного выбранного задания, что позволяет пользователю сфокусироваться на конкретной задаче. Навигация осуществляется через боковую панель с сеткой всех заданий и фильтрами по категориям (Алгебра, Геометрия и т.д.). Такой подход обеспечивает нелинейный доступ к контенту, а скрытие решений по умолчанию стимулирует самостоятельную работу. Эта структура выбрана для преобразования статичного списка задач в удобный интерактивный инструмент для обучения и самопроверки. -->
+  <!-- Visualization & Content Choices:
+      - Общая структура: Задачи представлены в виде "карточек" с кнопкой "Показать решение", чтобы скрыть ответ до попытки решения (Цель: Стимулировать активное обучение).
+      - Задание 11 (Цены на смартфоны): Цель -> Сравнение. Метод -> Горизонтальная гистограмма (Chart.js). Интеракция -> Подсветка самой низкой цены, всплывающие подсказки с точными значениями. Обоснование -> Визуально и быстро позволяет определить самый выгодный вариант.
+      - Задание 12 (Стоимость кирпича): Цель -> Сравнение. Метод -> Вертикальная гистограмма (Chart.js). Интеракция -> Всплывающие подсказки с разбивкой общей стоимости (кирпич + доставка). Обоснование -> Наглядно сравнивает итоговые затраты от разных поставщиков.
+      - Задание 18 (Доходы и расходы): Цель -> Анализ динамики. Метод -> Групповая гистограмма (Chart.js). Интеракция -> Возможность скрыть/показать наборы данных (доходы, расходы) через легенду. Обоснование -> Позволяет детально изучить финансовые показатели по месяцам и их соотношение.
+      Все визуализации используют Canvas, в соответствии с требованием.
+  -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FDFBF8; /* Warm neutral background */
+    }
+    .task-card {
+      background-color: #FFFFFF;
+      border: 1px solid #EAE6E1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .nav-button {
+      transition: all 0.2s ease-in-out;
+    }
+    .nav-button.active {
+      background-color: #A88B79; /* Muted Accent */
+      color: #FFFFFF;
+      transform: scale(1.05);
+    }
+    .nav-button:not(.active):hover {
+      background-color: #EAE6E1;
+    }
+    .category-button {
+      transition: all 0.2s ease-in-out;
+    }
+    .category-button.active {
+      background-color: #3D352F; /* Darker Neutral */
+      color: #FFFFFF;
+    }
+    .category-button:not(.active):hover {
+      background-color: #EAE6E1;
+    }
+    .solution-toggle {
+      background-color: #A88B79;
+      color: white;
+    }
+    .solution-toggle:hover {
+      background-color: #937866;
+    }
+    .solution-content {
+      background-color: #F9F7F5;
+      border-left: 3px solid #A88B79;
+    }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 300px;
+      max-height: 400px;
+    }
+    @media (min-width: 768px) {
+      .chart-container {
+        height: 350px;
+      }
+    }
+  </style>
+</head>
+<body class="text-gray-800">
+<div class="container mx-auto p-4 md:p-8">
+  <header class="text-center mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Интерактивный вариант заданий</h1>
+    <p class="text-lg text-gray-600 mt-2">Все расчеты выполнены с учетом <code class="bg-gray-200 text-gray-800 font-bold px-2 py-1 rounded"><span id="current-k-display">k = 3</span></code></p>
+    <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
+      <label for="k-input" class="text-gray-700 font-semibold">Изменить k:</label>
+      <input type="number" id="k-input" value="3" min="1" step="1"
+             class="w-24 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button id="apply-k-button" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200">Применить</button>
+    </div>
+  </header>
+
+  <div class="flex flex-col md:flex-row gap-8">
+    <aside class="w-full md:w-1/3 lg:w-1/4">
+      <div class="sticky top-8">
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <h3 class="font-bold text-lg mb-4 text-center">Навигация</h3>
+          <div class="mb-6">
+            <h4 class="font-semibold text-md mb-2 text-gray-700">Категории:</h4>
+            <div id="category-filters" class="flex flex-wrap gap-2"></div>
+          </div>
+          <h4 class="font-semibold text-md mb-2 text-gray-700">Задания:</h4>
+          <div id="task-navigation" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2">
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main id="task-content" class="w-full md:w-2/3 lg:w-3/4">
+    </main>
+  </div>
+</div>
+
+<script>
+  const tasks = [
+    {
+      id: 1,
+      category: 'Алгебра',
+      question: 'Найдите значение выражения: $(-8 \\cdot \\frac{4}{5k} + 3 \\cdot \\frac{1}{10k}) \\cdot (30k)$',
+      solution: (k) => `
+                    <p class="mb-2">1. Подставим k в выражение:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$(-8 \\cdot \\frac{4}{5 \\cdot ${k}} + 3 \\cdot \\frac{1}{10 \\cdot ${k}}) \\cdot (30 \\cdot ${k})$</p>
+                    <p class="mb-2">2. Упростим дроби в скобках:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$(-\\frac{32}{5k} + \\frac{3}{10k})$</p>
+                    <p class="mb-2">3. Приведем дроби к общему знаменателю (10k):</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$(-\\frac{64}{10k} + \\frac{3}{10k}) = -\\frac{61}{10k}$</p>
+                    <p class="mb-2">4. Выполним умножение на 30k:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$-(\\frac{61}{10k}) \\cdot (30k) = -61 \\cdot 3 = -183$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">-183</span></p>
+                `
+    },
+    {
+      id: 2,
+      category: 'Текстовые задачи',
+      question: 'В марте завод увеличил выпуск продукции на 20%, а в апреле – на 15%. Определите объём произведённой в апреле продукции, если в феврале было выпущено 60k единиц.',
+      solution: (k) => `
+                    <p class="mb-2">1. Выпуск в феврале: $60 \\cdot ${k}$ тыс. единиц.</p>
+                    <p class="mb-2">2. Выпуск в марте (увеличение на 20%): $60 \\cdot ${k} \\cdot 1.2 = ${ (60 * 1.2 * k).toFixed(1) }$ тыс. единиц.</p>
+                    <p class="mb-2">3. Выпуск в апреле (увеличение на 15% от марта): $(60 \\cdot ${k} \\cdot 1.2) \\cdot 1.15 = 60 \\cdot ${k} \\cdot 1.38 = ${ (60 * 1.38 * k).toFixed(1) }$ тыс. единиц.</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">${(60 * 1.38 * k).toFixed(1)} тыс. единиц</span></p>
+                `
+    },
+    {
+      id: 3,
+      category: 'Геометрия',
+      question: 'Найдите среднее геометрическое двух чисел $a$ и $b$, которое вычисляется по формуле $S = \\sqrt{a \\cdot b}$. Дано $a=225k$ и $b=729k$.',
+      solution: (k) => `
+                    <p class="mb-2">1. Найдем значения a и b:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$a = 225 \\cdot ${k}$<br>$b = 729 \\cdot ${k}$</p>
+                    <p class="mb-2">2. Подставим значения в формулу:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$S = \\sqrt{(225 \\cdot ${k}) \\cdot (729 \\cdot ${k})} = \\sqrt{225 \\cdot 729 \\cdot k^2}$</p>
+                    <p class="mb-2">3. Извлечем квадратный корень:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$S = \\sqrt{225} \\cdot \\sqrt{729} \\cdot \\sqrt{k^2} = 15 \\cdot 27 \\cdot k = 405k$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">405k = ${405 * k}</span></p>
+                `
+    },
+    {
+      id: 4,
+      category: 'Алгебра',
+      question: 'Найдите значение выражения: $\\log_{7^k} 49^k$.',
+      solution: (k) => `
+                    <p class="mb-2">1. Представим 49 как степень 7 ($49 = 7^2$):</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\log_{7^${k}} (7^2)^${k} = \\log_{7^${k}} 7^{2k}$</p>
+                    <p class="mb-2">2. Используем свойство логарифма $\\log_{b^n} x^m = \\frac{m}{n} \\log_b x$:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\frac{2k}{k} \\log_7 7 = 2 \\cdot 1 = 2$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">2</span></p>
+                `
+    },
+    {
+      id: 5,
+      category: 'Текстовые задачи',
+      question: 'Виктор планирует во время отпуска совершить путешествие на автомобиле по городам России. Средний расход бензина на 100 км составляет 10 литров, а длина предполагаемого маршрута – 5800 км. Сколько рублей Виктор потратит на бензин, если цена бензина – 4k рублей за литр?',
+      solution: (k) => `
+                    <p class="mb-2">1. Общий объем необходимого бензина: $(5800 \\text{ км} / 100 \\text{ км}) \\cdot 10 \\text{ л} = 58 \\cdot 10 = 580$ литров.</p>
+                    <p class="mb-2">2. Общая стоимость: $580 \\text{ л} \\cdot (4 \\cdot ${k}) \\text{ руб/л} = 2320k$ рублей.</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">2320k = ${2320 * k} рублей</span></p>
+                `
+    },
+    {
+      id: 6,
+      category: 'Геометрия',
+      question: 'Прямоугольную площадку с размерами $3k$ м и $14k$ м требуется уложить плитками прямоугольной формы со сторонами $30k$ см и $14k$ см. Сколько потребуется таких плиток?',
+      solution: (k) => `
+                    <p class="mb-2">1. Размеры площадки в сантиметрах:</p>
+                    <p class="mb-2 ml-4">Длина: $3 \\cdot ${k}$ м = ${300 * k} см.</p>
+                    <p class="mb-4 ml-4">Ширина: $14 \\cdot ${k}$ м = ${1400 * k} см.</p>
+                    <p class="mb-2">2. Площадь площадки: $(${300 * k}) \\cdot (${1400 * k}) = ${420000 * k * k} \\text{ см}^2$.</p>
+                    <p class="mb-2">3. Размеры плитки в сантиметрах:</p>
+                    <p class="mb-2 ml-4">Длина: $30 \\cdot ${k}$ см.</p>
+                    <p class="mb-4 ml-4">Ширина: $14 \\cdot ${k}$ см.</p>
+                    <p class="mb-2">4. Площадь плитки: $(${30 * k}) \\cdot (${14 * k}) = ${420 * k * k} \\text{ см}^2$.</p>
+                    <p class="mb-2">5. Необходимое количество плиток: $\\frac{${420000 * k * k}}{${420 * k * k}} = 1000$.</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">1000 плиток</span></p>
+                `
+    },
+    {
+      id: 7,
+      category: 'Геометрия',
+      question: 'Два ребра прямоугольного параллелепипеда равны $9k$ и $10k$, а объём равен $540k$. Найдите площадь поверхности этого параллелепипеда.',
+      solution: (k) => `
+                    <p class="mb-2">1. Известные ребра (a, b) и объем V:</p>
+                    <p class="mb-2 ml-4">$a = 9${k}$</p>
+                    <p class="mb-2 ml-4">$b = 10${k}$</p>
+                    <p class="mb-4 ml-4">$V = 540${k}$</p>
+                    <p class="mb-2">2. Найдем третье ребро (c): $V = a \\cdot b \\cdot c \\Rightarrow 540${k} = $(9${k}) \\cdot (10${k}) \\cdot c \\Rightarrow 540${k} = $90k^2c \\Rightarrow c = \\frac{540k}{90k^2} = \\frac{6}{k}$.</p>
+                    <p class="mb-2">3. Найдем площадь поверхности по формуле $S = 2(ab + ac + bc)$:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$S = 2((9${k})(10${k}) + (9${k})(\\frac{6}{k}) + (10${k})(\\frac{6}{k}))$</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$S = 2(90k^2 + 54 + 60) = 2(90k^2 + 114) = 180k^2 + 228$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">180k^2 + 228 = ${180 * k**2 + 228}</span></p>
+                `
+    },
+    {
+      id: 8,
+      category: 'Геометрия',
+      question: 'План местности разбит на клетки. Каждая клетка обозначает квадрат $k \\times k$ м. Найдите площадь загона, изображённого на плане. Ответ дайте в квадратных метрах.',
+      solution: (k) => `
+                    <p class="mb-2">Это задание требует визуального анализа изображения и подсчета клеток.</p>
+                    <p class="mb-2">Поскольку точные данные о количестве полных и неполных клеток могут интерпретироваться по-разному, данное задание предназначено для самостоятельного решения путем подсчета клеток на оригинальном изображении.</p>
+                    <p class="mb-2"><strong>Общий подход:</strong></p>
+                    <ul class="list-disc list-inside">
+                        <li class="mb-2">Определите размер одной клетки: ${k} \\times ${k} м, ее площадь ${k**2} м².</li>
+                        <li class="mb-2">Посчитайте количество полных клеток внутри фигуры.</li>
+                        <li class="mb-2">Оцените площадь, занимаемую неполными клетками (например, соединяя их в полные).</li>
+                        <li class="mb-2">Суммируйте площади и умножьте на ${k**2} м².</li>
+                    </ul>
+                `
+    },
+    {
+      id: 9,
+      category: 'Текстовые задачи',
+      question: 'Из 1000k лампочек, поступивших в продажу, 91k бракованных. Какова вероятность того, что купленная лампочка исправна?',
+      solution: (k) => `
+                    <p class="mb-2">1. Общее количество лампочек: $1000 \\cdot ${k}$.</p>
+                    <p class="mb-2">2. Количество бракованных лампочек: $91 \\cdot ${k}$.</p>
+                    <p class="mb-2">3. Количество исправных лампочек: $1000k - 91k = 909k = ${909 * k}$.</p>
+                    <p class="mb-2">4. Вероятность купить исправную лампочку:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$P(\\text{исправна}) = \\frac{909k}{1000k} = \\frac{909}{1000} = 0.909$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">0.909</span></p>
+                `
+    },
+    {
+      id: 10,
+      category: 'Алгебра',
+      question: 'Найдите корень уравнения: $\\log_{2}(k x - (5 + k)) = 5$.',
+      solution: (k) => `
+                    <p class="mb-2">1. По определению логарифма:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$${k}x - (5 + ${k}) = 2^5 = 32$</p>
+                    <p class="mb-2">2. Решим уравнение относительно x:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$${k}x - 5 - ${k} = 32 \\Rightarrow ${k}x = 37 + ${k} \\Rightarrow x = \\frac{37 + ${k}}{${k}} = ${ (37 + k) / k }$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">$\\frac{37 + k}{k} = ${ (37 + k) / k }</span></p>
+                `
+    },
+    {
+      id: 11,
+      category: 'Анализ данных',
+      question: 'Стоимость некоторой модели смартфона в различных магазинах представлена в таблице. Найдите наименьшую стоимость смартфона среди представленных предложений. Ответ дайте в рублях.',
+      data: {
+        labels: ['Стрела', 'Связной', 'МТС', 'ЕТК', 'QR', 'Билайн', 'RBT', 'MV'],
+        values: [460, 484, 503, 413, 453, 458, 488, 456]
+      },
+      solution: (k) => {
+        const finalValues = tasks[10].data.values.map(v => v * k); // Task 11 data is at index 10
+        const minValue = Math.min(...finalValues);
+        const minStore = tasks[10].data.labels[finalValues.indexOf(minValue)]; // Task 11 data
+        return `
+                        <p class="mb-4">Для нахождения наименьшей стоимости сравним цены во всех магазинах с учетом текущего значения k. Визуализация помогает быстро определить лидера.</p>
+                        <div class="chart-container h-[400px] md:h-[450px]">
+                            <canvas id="task11Chart"></canvas>
+                        </div>
+                        <p class="mt-4 text-center">Из графика видно, что наименьшая стоимость в магазине <strong>${minStore}</strong>.</p>
+                        <p class="mt-2 text-center text-lg font-bold">Расчет: $413 \\cdot ${k} = ${413 * k}$ рублей.</p>
+                        <p class="font-bold text-lg mt-4">Ответ: <span class="text-green-700">${minValue} рублей</span></p>
+                    `;
+      }
+    },
+    {
+      id: 12,
+      category: 'Анализ данных',
+      question: 'Для строительства дома планируется закупить 20 тонн кирпича. Предложения основных поставщиков представлены в таблице. Сколько рублей обойдётся самый дешёвый вариант покупки вместе с доставкой, если один кирпич весит 5 кг?',
+      data: {
+        labels: ['Поставщик А', 'Поставщик Б', 'Поставщик В'],
+        brickPrices: [46, 54, 61],
+        deliveryData: [
+          { base: 9000, condition: false },
+          { base: 7000, condition: 20000, free: true },
+          { base: 3000, condition: 24000, discount: 0.5 }
+        ]
+      },
+      solution: (k) => {
+        const numBricks = 4000;
+        const totalCosts = tasks[11].data.labels.map((label, i) => { // Task 12 data is at index 11
+          const brickPrice = tasks[11].data.brickPrices[i] * k;
+          const bricksCost = brickPrice * numBricks;
+          let deliveryCost = tasks[11].data.deliveryData[i].base;
+          if(tasks[11].data.deliveryData[i].free && bricksCost >= tasks[11].data.deliveryData[i].condition) {
+            deliveryCost = 0;
+          } else if (tasks[11].data.deliveryData[i].discount && bricksCost >= tasks[11].data.deliveryData[i].condition) {
+            deliveryCost *= (1 - tasks[11].data.deliveryData[i].discount);
+          }
+          return bricksCost + deliveryCost;
+        });
+        const minOverallCost = Math.min(...totalCosts);
+        const cheapestSupplier = tasks[11].data.labels[totalCosts.indexOf(minOverallCost)];
+        return `
+                        <p class="mb-2">1. Количество кирпичей: $(20 \\text{ тонн} \\cdot 1000) / 5 \\text{ кг} = 4000$ штук.</p>
+                        <p class="mb-4">2. Рассчитаем и сравним общую стоимость для каждого поставщика с учетом текущего значения k.</p>
+                        <div class="chart-container">
+                            <canvas id="task12Chart"></canvas>
+                        </div>
+                        <p class="mt-4 text-center">График показывает, что самый дешевый вариант предлагает <strong>${cheapestSupplier}</strong>.</p>
+                        <p class="font-bold text-lg mt-4">Ответ: <span class="text-green-700">${minOverallCost} рублей</span></p>
+                    `;
+      }
+    },
+    {
+      id: 13,
+      category: 'Геометрия',
+      question: 'Дан радиус сферы $R = 2k$ см. Определите площадь поверхности сферы.',
+      solution: (k) => `
+                    <p class="mb-2">1. Радиус сферы: $R = 2 \\cdot ${k}$ см.</p>
+                    <p class="mb-2">2. Площадь поверхности сферы вычисляется по формуле $S = 4\\pi R^2$.</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$S = 4\\pi (2${k})^2 = 4\\pi \\cdot 4k^2 = 16\\pi k^2$ см².</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">$16\\pi k^2 = ${ (16 * Math.PI * k**2).toFixed(2) }$ см²</span></p>
+                `
+    },
+    {
+      id: 14,
+      category: 'Алгебра',
+      question: 'Закон движения точки по прямой задаётся формулой $s(t) = kt + 5$, где $t$ – время (в секундах), $s(t)$ – отклонение точки в момент времени $t$ (в метрах) от начального положения. Найдите мгновенную скорость движения точки.',
+      solution: (k) => `
+                    <p class="mb-2">1. Формула положения: $s(t) = ${k}t + 5$.</p>
+                    <p class="mb-2">2. Мгновенная скорость $v(t)$ является производной от функции положения $s(t)$:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$v(t) = s'(t) = \\frac{d}{dt}(${k}t + 5) = ${k}$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">${k} м/с</span></p>
+                `
+    },
+    {
+      id: 15,
+      category: 'Алгебра',
+      question: 'Напишите уравнение касательной к графику функции $f(x) = x^k + kx + 4$ в точке с абсциссой $x_0 = 1$.',
+      solution: (k) => `
+                    <p class="mb-2">Уравнение касательной: $y = f(x_0) + f'(x_0)(x - x_0)$.</p>
+                    <p class="mb-2">1. Функция: $f(x) = x^{${k}} + ${k}x + 4$.</p>
+                    <p class="mb-2">2. Значение функции в точке $x_0=1$: $f(1) = 1^{${k}} + ${k}(1) + 4 = 1 + ${k} + 4 = ${k + 5}$.</p>
+                    <p class="mb-2">3. Производная функции: $f'(x) = ${k}x^{${k-1}} + ${k}$.</p>
+                    <p class="mb-2">4. Значение производной в точке $x_0=1$: $f'(1) = ${k}(1)^{${k-1}} + ${k} = ${k} + ${k} = ${2 * k}$.</p>
+                    <p class="mb-2">5. Составляем уравнение:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$y = (${k + 5}) + (${2 * k})(x - 1) \\Rightarrow y = ${k + 5} + ${2 * k}x - ${2 * k} \\Rightarrow y = ${2 * k}x ${-k + 5 >= 0 ? '+' : ''} ${-k + 5}$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">$y = ${2 * k}x ${-k + 5 >= 0 ? '+' : ''} ${-k + 5}$</span></p>
+                `
+    },
+    {
+      id: 16,
+      category: 'Геометрия',
+      question: 'Радиус основания и высота одного цилиндра равны соответственно $4+k$ и $4k$, а второго – $16k$ и $12+k$. Во сколько раз площадь боковой поверхности первого цилиндра меньше площади боковой поверхности второго?',
+      solution: (k) => `
+                    <p class="mb-2">Площадь боковой поверхности цилиндра: $S_{бок} = 2\\pi R H$.</p>
+                    <p class="mb-2">1. Параметры и площадь первого цилиндра:</p>
+                    <p class="mb-2 ml-4">$R_1 = 4+${k}$, $H_1 = 4${k}$.</p>
+                    <p class="mb-4 ml-4">$S_1 = 2\\pi (4+${k})(4${k}) = 8\\pi k (4+k) = (${(8 * k * (4 + k)).toFixed(2)} \\pi)$.</p>
+                    <p class="mb-2">2. Параметры и площадь второго цилиндра:</p>
+                    <p class="mb-2 ml-4">$R_2 = 16${k}$, $H_2 = 12+${k}$.</p>
+                    <p class="mb-4 ml-4">$S_2 = 2\\pi (16${k})(12+${k}) = 32\\pi k (12+k) = (${(32 * k * (12 + k)).toFixed(2)} \\pi)$.</p>
+                    <p class="mb-2">3. Найдем отношение площадей:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\frac{S_2}{S_1} = \\frac{32\\pi k (12 + k)}{8\\pi k (4 + k)} = \\frac{4(12+k)}{4+k} = \\frac{4(12+${k})}{4+${k}} = \\frac{${4 * (12 + k)}}{${4 + k}} = ${ ((4 * (12 + k)) / (4 + k)).toFixed(2) }$</p>
+                    <p class="font-bold text-lg">Ответ: в <span class="text-green-700">$\\frac{4(12+k)}{4+k}$ = ${ ((4 * (12 + k)) / (4 + k)).toFixed(2) }</span> раз</p>
+                `
+    },
+    {
+      id: 17,
+      category: 'Алгебра',
+      question: 'Дана функция $f(x) = kx^k + 3kx^{k+1}$. Найдите общий вид первообразных функции (коэффициенты представьте в виде десятичных дробей).',
+      solution: (k) => `
+                    <p class="mb-2">1. Функция: $f(x) = ${k}x^{${k}} + 3${k}x^{${k+1}}$.</p>
+                    <p class="mb-2">2. Общий вид первообразной $F(x) = \\int f(x) dx$.</p>
+                    <p class="mb-2">3. Интегрируем функцию:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$F(x) = \\int (${k}x^{${k}} + 3${k}x^{${k+1}}) dx = ${k}\\frac{x^{${k+1}}}{${k+1}} + 3${k}\\frac{x^{${k+2}}}{${k+2}} + C$</p>
+                    <p class="mb-2">4. Представим коэффициенты в виде десятичных дробей:</p>
+                    <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$F(x) = ${ (k/(k+1)).toFixed(2) }x^{${k+1}} + ${ (3*k/(k+2)).toFixed(2) }x^{${k+2}} + C$</p>
+                    <p class="font-bold text-lg">Ответ: <span class="text-green-700">$F(x) = ${ (k/(k+1)).toFixed(2) }x^{${k+1}} + ${ (3*k/(k+2)).toFixed(2) }x^{${k+2}} + C$</span></p>
+                `
+    },
+    {
+      id: 18,
+      category: 'Анализ данных',
+      question: 'В таблице указаны доходы и расходы фирмы за 5 месяцев. Пользуясь таблицей, поставьте в соответствие каждому из указанных периодов времени характеристику доходов и расходов.',
+      data: {
+        labels: ['Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь'],
+        baseIncome: [1242, 1350, 1512, 1296, 1404],
+        baseExpense: [1188, 1404, 1296, 1188, 972],
+        incomeModifier: [1, -1, 1, 1, -1], // 1 for +k, -1 for -k
+        incomeIndexForK: [0, 1, 2, 3, 4] // Indices where k is applied to income
+      },
+      solution: (k) => {
+        const incomeValues = tasks[17].data.baseIncome.map((base, i) => { // Task 18 data is at index 17
+          const modifier = tasks[17].data.incomeModifier[i];
+          return base + (modifier * k);
+        });
+        const expenseValues = tasks[17].data.baseExpense;
+        const differences = incomeValues.map((income, i) => income - expenseValues[i]);
+
+        let analysisPoints = [];
+
+        // 1) Доход меньше, чем в предыдущем:
+        let char1 = "не определено";
+        for(let i = 1; i < incomeValues.length; i++) {
+          if (incomeValues[i] < incomeValues[i-1]) {
+            char1 = tasks[17].data.labels[i];
+            break;
+          }
+        }
+        analysisPoints.push(`<li><strong>Доход меньше, чем в предыдущем:</strong> ${char1}</li>`);
+
+        // 2) Наибольший доход в период с августа по ноябрь:
+        const augustToIndex = tasks[17].data.labels.indexOf('Август');
+        const novemberToIndex = tasks[17].data.labels.indexOf('Ноябрь');
+        const incomeSubset = incomeValues.slice(augustToIndex, novemberToIndex + 1);
+        const maxIncomeInPeriod = Math.max(...incomeSubset);
+        const maxIncomeIndexInPeriod = incomeValues.indexOf(maxIncomeInPeriod);
+        analysisPoints.push(`<li><strong>Наибольший доход в период с августа по ноябрь:</strong> ${tasks[17].data.labels[maxIncomeIndexInPeriod]} (${maxIncomeInPeriod} тыс. руб.)</li>`);
+
+        // 3) Наибольшая разница (наибольшая прибыль):
+        const maxDifference = Math.max(...differences);
+        const maxDifferenceIndex = differences.indexOf(maxDifference);
+        analysisPoints.push(`<li><strong>Наибольшая разница между доходом и расходом (наибольшая прибыль):</strong> ${tasks[17].data.labels[maxDifferenceIndex]} (${maxDifference} тыс. руб.)</li>`);
+
+        // 4) Расход больше, чем в предыдущем:
+        let char4 = "не определено";
+        for(let i = 1; i < expenseValues.length; i++) {
+          if (expenseValues[i] > expenseValues[i-1]) {
+            char4 = tasks[17].data.labels[i];
+            break;
+          }
+        }
+        analysisPoints.push(`<li><strong>Расход больше, чем в предыдущем:</strong> ${char4}</li>`);
+
+        return `
+                        <p class="mb-4">Рассчитаем и визуализируем доходы и расходы за каждый месяц с учетом текущего значения k. Это позволит нам легко проверить каждое из четырех утверждений.</p>
+                        <div class="chart-container">
+                            <canvas id="task18Chart"></canvas>
+                        </div>
+                        <p class="mt-6"><strong>Анализ характеристик (для k=${k}):</strong></p>
+                        <ul class="list-decimal list-inside space-y-2 mt-2">
+                            ${analysisPoints.join('')}
+                        </ul>
+                        <p class="font-bold text-lg mt-4">Ответ: Определяется по таблице и графику после подстановки k.</p>
+                    `;
+      }
+    }
+  ];
+
+  const taskNavContainer = document.getElementById('task-navigation');
+  const taskContentContainer = document.getElementById('task-content');
+  const categoryFiltersContainer = document.getElementById('category-filters');
+  const kInput = document.getElementById('k-input');
+  const applyKButton = document.getElementById('apply-k-button');
+  const currentKDisplay = document.getElementById('current-k-display');
+
+  let currentK = parseInt(kInput.value, 10);
+  let activeTask = 1;
+  let activeCategory = 'Все';
+  let charts = {};
+
+  const categories = ['Все', ...new Set(tasks.map(t => t.category))];
+
+  function updateCurrentK(newK) {
+    currentK = newK;
+    currentKDisplay.textContent = `k = ${currentK}`;
+  }
+
+  function renderNav() {
+    taskNavContainer.innerHTML = '';
+    tasks.forEach(task => {
+      const isVisible = activeCategory === 'Все' || task.category === activeCategory;
+      const button = document.createElement('button');
+      button.textContent = task.id;
+      button.className = `nav-button w-12 h-12 rounded-lg font-bold flex items-center justify-center ${task.id === activeTask ? 'active' : ''} ${isVisible ? 'opacity-100' : 'opacity-30'}`;
+      button.onclick = () => {
+        activeTask = task.id;
+        render();
+      };
+      taskNavContainer.appendChild(button);
+    });
+  }
+
+  function renderCategories() {
+    categoryFiltersContainer.innerHTML = '';
+    categories.forEach(category => {
+      const button = document.createElement('button');
+      button.textContent = category;
+      button.className = `category-button px-3 py-1 rounded-full text-sm font-semibold ${category === activeCategory ? 'active' : ''}`;
+      button.onclick = () => {
+        activeCategory = category;
+        render();
+      };
+      categoryFiltersContainer.appendChild(button);
+    });
+  }
+
+  function renderTask() {
+    const task = tasks.find(t => t.id === activeTask);
+    if (!task) return;
+
+    // Replace {k} placeholder with currentK for display in question
+    const questionWithK = task.question.replace(/{k}/g, currentK);
+    // Call solution function to get dynamic content
+    const solutionContent = typeof task.solution === 'function' ? task.solution(currentK) : task.solution;
+
+    taskContentContainer.innerHTML = `
+                <div class="task-card p-6 rounded-xl">
+                    <h2 class="text-xl font-bold mb-4">Задание ${task.id} <span class="text-sm font-medium text-gray-500 ml-2">(${task.category})</span></h2>
+                    <div class="prose max-w-none mb-6">${questionWithK}</div>
+                    <button class="solution-toggle px-4 py-2 rounded-lg font-semibold mb-4" onclick="toggleSolution(this)">Показать решение</button>
+                    <div class="solution-content p-4 rounded-lg hidden">${solutionContent}</div>
+                </div>
+            `;
+
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([taskContentContainer]);
+    }
+
+    // Re-render charts for tasks with dynamic data
+    if(task.id === 11) renderTask11Chart(task.data);
+    if(task.id === 12) renderTask12Chart(task.data);
+    if(task.id === 18) renderTask18Chart(task.data);
+  }
+
+  function toggleSolution(button) {
+    const solutionDiv = button.nextElementSibling;
+    const isHidden = solutionDiv.classList.contains('hidden');
+    if (isHidden) {
+      solutionDiv.classList.remove('hidden');
+      button.textContent = 'Скрыть решение';
+    } else {
+      solutionDiv.classList.add('hidden');
+      button.textContent = 'Показать решение';
+    }
+  }
+
+  function render() {
+    renderNav();
+    renderCategories();
+    renderTask();
+  }
+
+  function destroyChart(id) {
+    if (charts[id]) {
+      charts[id].destroy();
+      delete charts[id];
+    }
+  }
+
+  function renderTask11Chart(data) {
+    destroyChart('task11');
+    const ctx = document.getElementById('task11Chart').getContext('2d');
+    const finalValues = data.values.map(v => v * currentK);
+    const minValue = Math.min(...finalValues);
+
+    charts['task11'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: 'Стоимость смартфона, руб.',
+          data: finalValues,
+          backgroundColor: finalValues.map(v => v === minValue ? 'rgba(22, 163, 74, 0.7)' : 'rgba(168, 139, 121, 0.6)'),
+          borderColor: finalValues.map(v => v === minValue ? 'rgba(22, 163, 74, 1)' : 'rgba(168, 139, 121, 1)'),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ` ${context.raw.toLocaleString('ru-RU')} руб.`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Стоимость (руб.)' }
+          }
+        }
+      }
+    });
+  }
+
+  function renderTask12Chart(data) {
+    destroyChart('task12');
+    const ctx = document.getElementById('task12Chart').getContext('2d');
+    const numBricks = 4000;
+
+    const totalCosts = data.labels.map((label, i) => {
+      const brickPrice = data.brickPrices[i] * currentK;
+      const bricksCost = brickPrice * numBricks;
+      let deliveryCost = data.deliveryData[i].base;
+      if(data.deliveryData[i].free && bricksCost >= data.deliveryData[i].condition) {
+        deliveryCost = 0;
+      } else if (data.deliveryData[i].discount && bricksCost >= data.deliveryData[i].condition) {
+        deliveryCost *= (1 - data.deliveryData[i].discount);
+      }
+      return bricksCost + deliveryCost;
+    });
+
+    charts['task12'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: 'Общая стоимость, руб.',
+          data: totalCosts,
+          backgroundColor: 'rgba(168, 139, 121, 0.6)',
+          borderColor: 'rgba(168, 139, 121, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ` ${context.raw.toLocaleString('ru-RU')} руб.`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            title: { display: true, text: 'Общая стоимость (руб.)' },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  function renderTask18Chart(data) {
+    destroyChart('task18');
+    const ctx = document.getElementById('task18Chart').getContext('2d');
+
+    const incomeValues = data.baseIncome.map((base, i) => {
+      const modifier = data.incomeModifier[i];
+      return base + (modifier * currentK);
+    });
+    const expenseValues = data.baseExpense; // Расходы не зависят от k
+
+    charts['task18'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.labels,
+        datasets: [
+          {
+            label: 'Доход',
+            data: incomeValues,
+            backgroundColor: 'rgba(110, 161, 122, 0.6)',
+            borderColor: 'rgba(110, 161, 122, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Расход',
+            data: expenseValues,
+            backgroundColor: 'rgba(214, 143, 117, 0.6)',
+            borderColor: 'rgba(214, 143, 117, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: ${context.raw.toLocaleString('ru-RU')} тыс. руб.`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            title: { display: true, text: 'Сумма (тыс. руб.)' },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  applyKButton.addEventListener('click', () => {
+    const newKValue = parseInt(kInput.value, 10);
+    if (!isNaN(newKValue) && newKValue > 0) {
+      updateCurrentK(newKValue);
+      render();
+    } else {
+      alert('Пожалуйста, введите корректное положительное число для k.');
+      kInput.value = currentK; // Reset to previous valid value
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Load MathJax for beautiful math rendering before rendering tasks
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+    script.async = true;
+    script.onload = () => {
+      if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+        window.MathJax.startup.promise.then(() => {
+          updateCurrentK(parseInt(kInput.value, 10)); // Initialize k before first render
+          render(); // Render tasks only after MathJax is fully ready
+        });
+      } else {
+        console.error('MathJax not fully loaded or configured.');
+        updateCurrentK(parseInt(kInput.value, 10)); // Initialize k
+        render(); // Fallback to render without MathJax if there's an issue
+      }
+    };
+    script.onerror = () => {
+      console.error('Failed to load MathJax script.');
+      updateCurrentK(parseInt(kInput.value, 10)); // Initialize k
+      render(); // Render without MathJax if script loading fails
+    };
+    document.head.appendChild(script);
+
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  });
+
+</script>
+</body>
+</html>
