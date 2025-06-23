@@ -1,10 +1,869 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Title</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Интерактивный вариант заданий (Новый)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chosen Palette: Warm Neutrals -->
+  <!-- Application Structure Plan: Я разработал структуру в виде интерактивной панели управления (dashboard). Центральным элементом является область для отображения одного выбранного задания, что позволяет пользователю сфокусироваться на конкретной задаче. Навигация осуществляется через боковую панель с сеткой всех заданий и фильтрами по категориям (Алгебра, Геометрия и т.д.). Такой подход обеспечивает нелинейный доступ к контенту, а скрытие решений по умолчанию стимулирует самостоятельную работу. Эта структура выбрана для преобразования статичного списка задач в удобный интерактивный инструмент для обучения и самопроверки. -->
+  <!-- Visualization & Content Choices:
+      - Общая структура: Задачи представлены в виде "карточек" с кнопкой "Показать решение", чтобы скрыть ответ до попытки решения (Цель: Стимулировать активное обучение).
+      - Задание 5 (План местности): Цель -> Расчет площади по изображению. Метод -> Текстовое описание с формулами. Интеракция -> Пользовательский ввод 'k' влияет на размер одной клетки.
+      - Задание 6 (Бракованные фены): Цель -> Расчет вероятности. Метод -> Текстовое описание с формулами. Интеракция -> Изменение 'k' влияет на количество бракованных фенов.
+      - Задание 7 (Показательное неравенство): Цель -> Решение неравенства. Метод -> Текстовое описание с пошаговым решением. Интеракция -> Изменение 'k' влияет на конечное числовое значение.
+      - Задание 8 (Корень уравнения): Цель -> Нахождение корня уравнения. Метод -> Текстовое описание с пошаговым решением. Интеракция -> Значение 'k' влияет на конечное числовое значение.
+      - Задание 9 (Тригонометрическое уравнение): Цель -> Решение тригонометрического уравнения. Метод -> Текстовое описание с пошаговым решением. Интеракция -> Значение 'k' влияет на конечное числовое значение.
+      - Задание 10 (Тригонометрическое уравнение): Цель -> Решение тригонометрического уравнения. Метод -> Текстовое описание с пошаговым решением. Интеракция -> Значение 'k' влияет на конечное числовое значение.
+      - Задание 11 (Длина забора): Цель -> Расчет длины забора. Метод -> Текстовое описание с формулами. Интеракция -> Изменение 'k' влияет на размеры участка.
+      - Задание 12 (Таблица гостиниц): Цель -> Анализ данных таблицы и выбор оптимального варианта. Метод -> Таблица с данными и текстовое описание. Интеракция -> Пользовательский ввод 'k' влияет на цены.
+      - Задание 13 (Касательная к графику): Цель -> Вычисление углового коэффициента касательной. Метод -> Текстовое описание с формулами. Интеракция -> Значение 'k' влияет на функцию и абсциссу.
+      - Задание 14 (Первообразная): Цель -> Нахождение первообразной функции. Метод -> Текстовое описание с формулами. Интеракция -> Изменение 'k' влияет на функцию.
+      - Задание 15 (Диагональ куба): Цель -> Нахождение диагонали куба. Метод -> Текстовое описание с формулами. Интеракция -> Изменение 'k' влияет на длину ребра куба.
+      - Задание 16 (Площадь сферы): Цель -> Расчет площади сферы. Метод -> Текстовое описание с формулами. Интеракция -> Изменение 'k' влияет на радиус.
+      - Задание 17 (Параллелепипед): Цель -> Нахождение третьего ребра параллелепипеда. Метод -> Текстовое описание с формулами. Интеракция -> Изменение 'k' влияет на длины ребер.
+      - Задание 18 (Цилиндр): Цель -> Расчет объема цилиндра. Метод -> Текстовое описание с формулами. Интеракция -> Изменение 'k' влияет на диаметр.
+  -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FDFBF8; /* Warm neutral background */
+    }
+    .task-card {
+      background-color: #FFFFFF;
+      border: 1px solid #EAE6E1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .nav-button {
+      transition: all 0.2s ease-in-out;
+    }
+    .nav-button.active {
+      background-color: #A88B79; /* Muted Accent */
+      color: #FFFFFF;
+      transform: scale(1.05);
+    }
+    .nav-button:not(.active):hover {
+      background-color: #EAE6E1;
+    }
+    .category-button {
+      transition: all 0.2s ease-in-out;
+    }
+    .category-button.active {
+      background-color: #3D352F; /* Darker Neutral */
+      color: #FFFFFF;
+    }
+    .category-button:not(.active):hover {
+      background-color: #EAE6E1;
+    }
+    .solution-toggle {
+      background-color: #A88B79;
+      color: white;
+    }
+    .solution-toggle:hover {
+      background-color: #937866;
+    }
+    .solution-content {
+      background-color: #F9F7F5;
+      border-left: 3px solid #A88B79;
+    }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 300px;
+      max-height: 400px;
+    }
+    @media (min-width: 768px) {
+      .chart-container {
+        height: 350px;
+      }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
 </head>
-<body>
+<body class="text-gray-800">
+<div class="container mx-auto p-4 md:p-8">
+  <header class="text-center mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Интерактивный вариант заданий</h1>
+    <p class="text-lg text-gray-600 mt-2">Все расчеты выполнены с учетом <code class="bg-gray-200 text-gray-800 font-bold px-2 py-1 rounded"><span id="current-k-display">k = 3</span></code></p>
+    <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
+      <label for="k-input" class="text-gray-700 font-semibold">Изменить k:</label>
+      <input type="number" id="k-input" value="3" min="1" step="1"
+             class="w-24 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button id="apply-k-button" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200">Применить</button>
+    </div>
+  </header>
 
+  <div class="flex flex-col md:flex-row gap-8">
+    <aside class="w-full md:w-1/3 lg:w-1/4">
+      <div class="sticky top-8">
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <h3 class="font-bold text-lg mb-4 text-center">Навигация</h3>
+          <div class="mb-6">
+            <h4 class="font-semibold text-md mb-2 text-gray-700">Категории:</h4>
+            <div id="category-filters" class="flex flex-wrap gap-2"></div>
+          </div>
+          <h4 class="font-semibold text-md mb-2 text-gray-700">Задания:</h4>
+          <div id="task-navigation" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2">
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main id="task-content" class="w-full md:w-2/3 lg:w-3/4">
+    </main>
+  </div>
+</div>
+
+<script>
+  const tasks = [
+    {
+      id: 1,
+      category: 'Алгебра',
+      question: 'Найдите значение выражения: $(0.2(k^2 + 0.32) - 0.032) : (0.1k)$',
+      solution: (k) => {
+        if (k === 0) {
+          return `
+                            <p class="mb-2 text-red-600">Деление на ноль: Значение k не может быть равно 0 в этом выражении.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (k=0)</span></p>
+                        `;
+        }
+        const val = (0.2 * (k**2 + 0.32) - 0.032) / (0.1 * k);
+        return `
+                        <p class="mb-2">1. Упростим выражение в скобках:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$0.2(k^2 + 0.32) - 0.032 = 0.2k^2 + 0.064 - 0.032 = 0.2k^2 + 0.032$</p>
+                        <p class="mb-2">2. Теперь разделим на $0.1k$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\frac{0.2k^2 + 0.032}{0.1k} = \\frac{0.2k^2}{0.1k} + \\frac{0.032}{0.1k} = 2k + \\frac{0.32}{k}$</p>
+                        <p class="mb-2">3. Вычислим для k=${k}:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$2 \\cdot ${k} + \\frac{0.32}{${k}} = ${val.toFixed(3)}$</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${val.toFixed(3)}</span></p>
+                    `;
+      }
+    },
+    {
+      id: 2,
+      category: 'Алгебра',
+      question: 'Найдите значение выражения: $\\frac{(143k)^2 - (3k)^2}{146k}$',
+      solution: (k) => {
+        if (k === 0) {
+          return `
+                            <p class="mb-2 text-red-600">Деление на ноль: Значение k не может быть равно 0 в этом выражении.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (k=0)</span></p>
+                        `;
+        }
+        const numerator = (143 * k)**2 - (3 * k)**2;
+        const denominator = 146 * k;
+        let val;
+        if (denominator === 0) {
+          val = "Деление на ноль";
+        } else {
+          // (143k)^2 - (3k)^2 = (143^2)k^2 - (3^2)k^2 = (143^2 - 3^2)k^2
+          // (143 - 3)(143 + 3)k^2 = 140 * 146 * k^2
+          // (140 * 146 * k^2) / (146k) = 140k
+          val = 140 * k; // Simplified calculation
+        }
+
+        return `
+                        <p class="mb-2">1. Разложим числитель по формуле разности квадратов $a^2 - b^2 = (a-b)(a+b)$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$(143k)^2 - (3k)^2 = (143k - 3k)(143k + 3k) = (140k)(146k) = 140 \\cdot 146 \\cdot k^2$</p>
+                        <p class="mb-2">2. Теперь разделим на знаменатель $146k$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\frac{140 \\cdot 146 \\cdot k^2}{146k}$</p>
+                        <p class="mb-2">3. Сократим $146$ и $k$ (при $k \\neq 0$):</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$140k$</p>
+                        <p class="mb-2">4. Вычислим для k=${k}:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$140 \\cdot ${k} = ${val.toFixed(3)}$</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${val.toFixed(3)}</span></p>
+                    `;
+      }
+    },
+    {
+      id: 3,
+      category: 'Текстовые задачи',
+      question: 'Городской бюджет составляет $4k$ млн рублей, а расходы на одну из его статей составили 15%. Сколько миллионов рублей потрачено на эту статью бюджета?',
+      solution: (k) => {
+        const totalBudget = 4 * k;
+        const expensePercentage = 0.15;
+        const expenseAmount = totalBudget * expensePercentage;
+        return `
+                        <p class="mb-2">1. Общий бюджет города: $4 \\cdot ${k} = ${totalBudget}$ млн рублей.</p>
+                        <p class="mb-2">2. Расходы на статью бюджета: 15% от ${totalBudget} млн рублей.</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">Расходы = ${totalBudget} \\cdot 0.15 = ${expenseAmount.toFixed(2)}$ млн рублей.</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${expenseAmount.toFixed(2)} миллионов рублей</span></p>
+                    `;
+      }
+    },
+    {
+      id: 4,
+      category: 'Алгебра',
+      question: 'Найдите $m$ из равенства $F = ma$, если $F = 84k$ и $a = 9 + k$. Ответ запишите в виде десятичной дроби, округлив ее до сотых при необходимости.',
+      solution: (k) => {
+        const F = 84 * k;
+        const a = 9 + k;
+        let m;
+
+        if (a === 0) {
+          return `
+                            <p class="mb-2 text-red-600">Деление на ноль: Значение 'a' не может быть равно 0. Проверьте значение k.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (a=0)</span></p>
+                        `;
+        }
+        m = F / a;
+
+        return `
+                        <p class="mb-2">1. Дано: $F = ma$, $F = 84k$, $a = 9 + k$.</p>
+                        <p class="mb-2">2. Выразим $m$: $m = \\frac{F}{a}$</p>
+                        <p class="mb-2">3. Подставим значения для k=${k}:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$m = \\frac{84 \\cdot ${k}}{9 + ${k}} = \\frac{${F}}{${a}} = ${m.toFixed(2)}$</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${m.toFixed(2)}</span></p>
+                    `;
+      }
+    },
+    {
+      id: 5,
+      category: 'Геометрия',
+      question: 'План местности разбит на клетки. Каждая клетка обозначает квадрат $k$ м на $k$ м. Найдите площадь участка, изображенного на плане. Ответ дайте в квадратных метрах.',
+      image: 'https://placehold.co/400x250/EAE6E1/A88B79?text=План+участка',
+      solution: (k) => {
+        // Based on the image, the shape is a triangle with base 7 units and height 4 units.
+        // Each unit is k meters.
+        const baseUnits = 7;
+        const heightUnits = 4;
+
+        const baseLength = baseUnits * k; // meters
+        const heightLength = heightUnits * k; // meters
+
+        const areaInSqMeters = 0.5 * baseLength * heightLength; // Area of a triangle
+
+        return `
+                        <p class="mb-2">1. Основание треугольника на плане: ${baseUnits} клеток. Высота треугольника на плане: ${heightUnits} клеток.</p>
+                        <p class="mb-2">2. Длина одной стороны клетки: ${k} м.</p>
+                        <p class="mb-2">3. Фактическая длина основания: ${baseUnits} \\cdot ${k} = ${baseLength}$ м.</p>
+                        <p class="mb-2">4. Фактическая высота: ${heightUnits} \\cdot ${k} = ${heightLength}$ м.</p>
+                        <p class="mb-2">5. Площадь треугольника: $S = \\frac{1}{2} \\cdot \\text{основание} \\cdot \\text{высота}$</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$S = \\frac{1}{2} \\cdot ${baseLength} \\cdot ${heightLength} = ${areaInSqMeters}$ м².</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${areaInSqMeters} м²</span></p>
+                    `;
+      }
+    },
+    {
+      id: 6,
+      category: 'Вероятность',
+      question: 'В магазине из 150 фенов имеются $k$ бракованных. Какова вероятность, что взятый наугад фен окажется исправным? Ответ запишите в виде десятичной дроби, округлив ее до сотых при необходимости.',
+      solution: (k) => {
+        const totalFens = 150;
+        const defectiveFens = k;
+        const workingFens = totalFens - defectiveFens;
+        let probability = 0;
+
+        if (defectiveFens < 0 || defectiveFens > totalFens) {
+          return `
+                            <p class="mb-2 text-red-600">Некорректное значение k: Количество бракованных фенов не может быть отрицательным или превышать общее количество фенов (${totalFens}).</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (некорректные данные)</span></p>
+                        `;
+        }
+
+        probability = workingFens / totalFens;
+
+        return `
+                        <p class="mb-2">1. Общее количество фенов: ${totalFens}.</p>
+                        <p class="mb-2">2. Количество бракованных фенов: ${defectiveFens}.</p>
+                        <p class="mb-2">3. Количество исправных фенов: ${totalFens} - ${defectiveFens} = ${workingFens}.</p>
+                        <p class="mb-2">4. Вероятность, что взятый фен окажется исправным:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$P = \\frac{\\text{Количество исправных фенов}}{\\text{Общее количество фенов}} = \\frac{${workingFens}}{${totalFens}} = ${probability.toFixed(2)}$</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${probability.toFixed(2)}</span></p>
+                    `;
+      }
+    },
+    {
+      id: 7,
+      category: 'Алгебра',
+      question: 'Решите неравенство: $2^{kx+9} \\ge 2^{-x+k}$',
+      solution: (k) => {
+        let solutionText;
+        // Since the base (2) is greater than 1, we can compare the exponents directly.
+        // kx + 9 >= -x + k
+        // kx + x >= k - 9
+        // x(k + 1) >= k - 9
+
+        if (k + 1 > 0) { // Case 1: k + 1 is positive (k > -1)
+          const val = (k - 9) / (k + 1);
+          solutionText = `
+                            <p class="mb-2">Поскольку основания равны и больше 1, мы можем сравнить показатели:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$kx + 9 \\ge -x + k$</p>
+                            <p class="mb-2">Перегруппируем члены:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$kx + x \\ge k - 9$</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$x(k + 1) \\ge k - 9$</p>
+                            <p class="mb-2">Так как $k + 1 > 0$ (для $k > -1$), делим обе части на $k + 1$:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$x \\ge \\frac{k - 9}{k + 1} = ${val.toFixed(3)}$</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-green-700">$x \\ge ${val.toFixed(3)}$</span></p>
+                        `;
+        } else if (k + 1 < 0) { // Case 2: k + 1 is negative (k < -1)
+          const val = (k - 9) / (k + 1);
+          solutionText = `
+                            <p class="mb-2">Поскольку основания равны и больше 1, мы можем сравнить показатели:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$kx + 9 \\ge -x + k$</p>
+                            <p class="mb-2">Перегруппируем члены:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$kx + x \\ge k - 9$</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$x(k + 1) \\ge k - 9$</p>
+                            <p class="mb-2">Так как $k + 1 < 0$ (для $k < -1$), делим обе части на $k + 1$ и меняем знак неравенства:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$x \\le \\frac{k - 9}{k + 1} = ${val.toFixed(3)}$</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-green-700">$x \\le ${val.toFixed(3)}$</span></p>
+                        `;
+        } else { // Case 3: k + 1 = 0 (k = -1)
+          solutionText = `
+                            <p class="mb-2">Если $k = -1$, неравенство становится:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$2^{-x+9} \\ge 2^{-x-1}$</p>
+                            <p class="mb-2">Сравниваем показатели:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$-x + 9 \\ge -x - 1$</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$9 \\ge -1$</p>
+                            <p class="mb-2">Это утверждение всегда истинно. Следовательно, для $k = -1$ решением является любое действительное число.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-green-700">$x \\in \\mathbb{R}$</span> (для k=-1)</p>
+                        `;
+        }
+        return solutionText;
+      }
+    },
+    {
+      id: 8,
+      category: 'Алгебра',
+      question: 'Найдите корень уравнения: $\\log_3 (k - 3 + x) = 4$',
+      solution: (k) => {
+        // For log_b(A) = C, then A = b^C
+        // k - 3 + x = 3^4
+        // k - 3 + x = 81
+        // x = 81 - k + 3
+        // x = 84 - k
+        const val = 84 - k;
+        // Condition for logarithm: k - 3 + x > 0
+        // k - 3 + (84 - k) > 0 => 81 > 0 (always true)
+        return `
+                        <p class="mb-2">1. По определению логарифма, если $\\log_b A = C$, то $A = b^C$.</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$k - 3 + x = 3^4$</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$k - 3 + x = 81$</p>
+                        <p class="mb-2">2. Выразим $x$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$x = 81 - k + 3 = 84 - k$</p>
+                        <p class="mb-2">3. Вычислим для k=${k}:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$x = 84 - ${k} = ${val}$</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${val}</span></p>
+                    `;
+      }
+    },
+    {
+      id: 9,
+      category: 'Тригонометрия',
+      question: 'Определите значение $\\cos x$, если $\\sin x = \\frac{\\sqrt{13}}{4\\sqrt{k}}$ и $90^\\circ < x < 180^\\circ$. Ответ запишите в виде десятичной дроби, округлив ее до сотых при необходимости.',
+      solution: (k) => {
+        if (k <= 0) {
+          return `
+                            <p class="mb-2 text-red-600">Недопустимое значение k: k должно быть положительным для корня.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (недопустимое значение k)</span></p>
+                        `;
+        }
+
+        const sin_x_val_expr = `\\frac{\\sqrt{13}}{4\\sqrt{k}}`;
+        const sin_x_val = Math.sqrt(13) / (4 * Math.sqrt(k));
+        let cos_x;
+        let error = false;
+
+        if (sin_x_val < 0 || sin_x_val > 1 + 1e-9) { // For 90 < x < 180, sin(x) must be between 0 and 1
+          error = true;
+        } else {
+          // cos^2(x) = 1 - sin^2(x)
+          const cos_x_squared = 1 - sin_x_val**2;
+          if (cos_x_squared < 0) { // Should not happen if sin_x_val is within range, but for safety
+            error = true;
+          } else {
+            // Since 90 < x < 180 (II quadrant), cos(x) is negative.
+            cos_x = -Math.sqrt(cos_x_squared);
+          }
+        }
+
+        if (error) {
+          return `
+                            <p class="mb-2">1. Вычислим $\\sin x$ для k=${k}:</p>
+                            <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\sin x = ${sin_x_val_expr} = ${sin_x_val.toFixed(3)}$</p>
+                            <p class="mb-2 text-red-600">Значение $\\sin x$ (${sin_x_val.toFixed(3)}) выходит за пределы допустимого диапазона [0, 1] для данной четверти или приводит к отрицательному $\\cos^2 x$. Проверьте значение k.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить</span></p>
+                        `;
+        }
+
+        return `
+                        <p class="mb-2">1. Вычислим $\\sin x$ для k=${k}:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\sin x = ${sin_x_val_expr} = ${sin_x_val.toFixed(3)}$</p>
+                        <p class="mb-2">2. Используем основное тригонометрическое тождество $\\sin^2 x + \\cos^2 x = 1$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\cos^2 x = 1 - \\sin^2 x = 1 - (${sin_x_val.toFixed(3)})^2 = ${(1 - sin_x_val**2).toFixed(3)}$</p>
+                        <p class="mb-2">3. Поскольку $90^\\circ < x < 180^\\circ$ (II четверть), $\\cos x$ должен быть отрицательным:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$\\cos x = -\\sqrt{${(1 - sin_x_val**2).toFixed(3)}} = ${cos_x.toFixed(2)}$</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${cos_x.toFixed(2)}</span></p>
+                    `;
+      }
+    },
+    {
+      id: 10,
+      category: 'Тригонометрия',
+      question: 'Найдите корень уравнения: $\\cos kx = -1$.',
+      solution: (k) => {
+        if (k === 0) {
+          return `
+                            <p class="mb-2 text-red-600">Для $k=0$, $\\cos(0) = 1 \\neq -1$. Уравнение не имеет решений.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Нет решений</span></p>
+                        `;
+        }
+        // cos A = -1 => A = pi + 2*pi*n
+        // kx = pi + 2*pi*n
+        // x = (pi + 2*pi*n) / k = pi(1 + 2n) / k
+        // For simplest positive solution, let n=0, x = pi/k
+        const x_rad = Math.PI / k;
+        const x_deg = (x_rad * 180) / Math.PI; // Convert to degrees
+
+        return `
+                        <p class="mb-2">1. Общее решение для $\\cos A = -1$ это $A = \\pi + 2\\pi n$, где $n$ - целое число.</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$kx = \\pi + 2\\pi n$</p>
+                        <p class="mb-2">2. Если $k \\neq 0$, то:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$x = \\frac{\\pi + 2\\pi n}{k} = \\frac{\\pi(1 + 2n)}{k}$</p>
+                        <p class="mb-2">3. Для $n=0$, $x = \\frac{\\pi}{k}$ радиан.</p>
+                        <p class="mb-2">4. Переведем в градусы:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$x = \\frac{\\pi}{k} \\cdot \\frac{180^\\circ}{\\pi} = \\frac{180^\\circ}{k}$</p>
+                        <p class="mb-2 text-gray-600">Примечание: Это одно из возможных решений. Все решения имеют вид $\\frac{180^\\circ(1+2n)}{k}$, где $n \\in \\mathbb{Z}$.</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">$\\frac{180^\\circ}{k} = ${x_deg.toFixed(2)}^\\circ$</span></p>
+                    `;
+      }
+    },
+    {
+      id: 11,
+      category: 'Геометрия',
+      question: 'Участок земли для строительства офисного здания имеет форму прямоугольника, стороны которого равны $3k$ м и $(9+k)$ м. Для того, чтобы обезопасить место строительства необходимо построить забор. Найдите длину этого забора. Ответ дайте в метрах.',
+      solution: (k) => {
+        const side1 = 3 * k;
+        const side2 = 9 + k;
+        const perimeter = 2 * (side1 + side2);
+
+        if (side1 <= 0 || side2 <= 0) {
+          return `
+                            <p class="mb-2 text-red-600">Некорректные значения: Стороны прямоугольника не могут быть отрицательными или равны нулю. Проверьте значение k.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (некорректные данные)</span></p>
+                        `;
+        }
+
+        return `
+                        <p class="mb-2">1. Стороны прямоугольника: $a = 3k = ${side1}$ м, $b = 9+k = ${side2}$ м.</p>
+                        <p class="mb-2">2. Длина забора - это периметр прямоугольника: $P = 2(a + b)$.</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$P = 2 \\cdot (${side1} + ${side2}) = 2 \\cdot ${side1 + side2} = ${perimeter}$ м.</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${perimeter} м</span></p>
+                    `;
+      }
+    },
+    {
+      id: 12,
+      category: 'Текстовые задачи',
+      question: 'Сергей Олегович собирается в туристическую поездку на трое суток в некоторый город. В таблице представлена информация о гостиницах этого города со свободными номерами на время его поездки. Сергей Олегович хочет остановиться в гостинице, которая находится не далее 2.5 км от центральной площади и рейтинг которой не ниже 8.5. Среди гостиниц, удовлетворяющих этим условиям, выберите гостиницу с наименьшей ценой номера за сутки. Сколько рублей обойдётся покупка в этой гостинице в течение трёх суток?',
+      data: {
+        headers: ['Название гостиницы', 'Рейтинг гостиницы', 'Расстояние до центральной площади (км)', 'Цена номера (руб. в сутки)'],
+        rows: [
+          ['«Красноярск»', 8.8, 2.1, (k) => 315 * k],
+          ['«Семь подушек»', 8.6, 1.5, (k) => 410 * k],
+          ['«Огни Енисея»', 9.0, 2.8, (k) => 360 * k],
+          ['«Такмак»', 7.2, 2.3, (k) => 300 * k],
+          ['«Уют»', 8.4, 3.3, (k) => 200 * k],
+          ['«Север»', 8.6, 3.2, (k) => 280 * k]
+        ]
+      },
+      solution: (k) => {
+        const maxDistance = 2.5;
+        const minRating = 8.5;
+        const stayDuration = 3; // days
+
+        let eligibleHotels = [];
+        // Find the task with ID 12 to get its data
+        const hotelTask = tasks.find(t => t.id === 12);
+        if (!hotelTask || !hotelTask.data || !hotelTask.data.rows) {
+          return `<p class="mb-2 text-red-600">Ошибка: Данные гостиниц не найдены.</p>`;
+        }
+
+        hotelTask.data.rows.forEach(row => {
+          const hotelName = row[0];
+          const rating = row[1];
+          const distance = row[2];
+          const price = row[3](k); // Calculate price based on k
+
+          if (distance <= maxDistance && rating >= minRating) {
+            eligibleHotels.push({ name: hotelName, rating: rating, distance: distance, price: price });
+          }
+        });
+
+        if (eligibleHotels.length === 0) {
+          return `<p class="mb-2 text-red-600">Нет гостиниц, удовлетворяющих условиям (расстояние не более ${maxDistance} км, рейтинг не ниже ${minRating}). Попробуйте изменить k.</p>`;
+        }
+
+        // Sort by price to find the minimum
+        eligibleHotels.sort((a, b) => a.price - b.price);
+        const chosenHotel = eligibleHotels[0];
+        const totalCost = chosenHotel.price * stayDuration;
+
+        let tableHtml = `
+                        <table class="min-w-full bg-white border border-gray-300 rounded-md overflow-hidden">
+                            <thead>
+                                <tr>
+                                    <th class="py-2 px-4 border-b">Название гостиницы</th>
+                                    <th class="py-2 px-4 border-b">Рейтинг</th>
+                                    <th class="py-2 px-4 border-b">Расстояние (км)</th>
+                                    <th class="py-2 px-4 border-b">Цена (руб/сутки)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+        hotelTask.data.rows.forEach(row => {
+          const price = row[3](k);
+          const isEligible = eligibleHotels.some(hotel => hotel.name === row[0]);
+          const isChosen = chosenHotel && chosenHotel.name === row[0];
+          tableHtml += `<tr class="${isChosen ? 'bg-green-100 font-bold' : isEligible ? 'bg-blue-50' : ''}">
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                                <td>${price.toFixed(2)}</td>
+                            </tr>`;
+        });
+        tableHtml += `</tbody></table>`;
+
+        return `
+                        <p class="mb-4">Информация о гостиницах (цены рассчитаны для k=${k}):</p>
+                        ${tableHtml}
+                        <p class="mb-2">Гостиницы, удовлетворяющие условиям (расстояние не более ${maxDistance} км, рейтинг не ниже ${minRating}):</p>
+                        <ul class="list-disc list-inside ml-4">
+                            ${eligibleHotels.map(h => `<li>${h.name} (Рейтинг: ${h.rating}, Расстояние: ${h.distance} км, Цена: ${h.price.toFixed(2)} руб./сутки)</li>`).join('')}
+                        </ul>
+                        <p class="mt-4 font-bold">Выбранная гостиница: <span class="text-green-700">${chosenHotel.name}</span> (Цена за сутки: ${chosenHotel.price.toFixed(2)} руб.)</p>
+                        <p class="font-bold text-lg">Общая стоимость за ${stayDuration} суток: <span class="text-green-700">${totalCost.toFixed(2)} рублей</span></p>
+                    `;
+      }
+    },
+    {
+      id: 13,
+      category: 'Математический анализ',
+      question: 'Вычислите угловой коэффициент касательной к графику функции $f(x) = 4kx^2$ в точке с абсциссой $x_0 = -2k$.',
+      solution: (k) => {
+        // f'(x) = d/dx (4kx^2) = 8kx
+        // Angular coefficient at x0 = -2k is f'(-2k) = 8k * (-2k) = -16k^2
+        const angularCoefficient = -16 * k**2;
+        return `
+                        <p class="mb-2">1. Найдем производную функции $f(x) = 4kx^2$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$f'(x) = \\frac{d}{dx}(4kx^2) = 8kx$</p>
+                        <p class="mb-2">2. Угловой коэффициент касательной в точке $x_0 = -2k$ равен значению производной в этой точке:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$f'(-2k) = 8k \\cdot (-2k) = -16k^2$</p>
+                        <p class="mb-2">3. Вычислим для k=${k}:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$-16 \\cdot ${k}^2 = ${angularCoefficient}$</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${angularCoefficient}</span></p>
+                    `;
+      }
+    },
+    {
+      id: 14,
+      category: 'Математический анализ',
+      question: 'Найдите первообразную функции $f(x) = x^k + k$.',
+      solution: (k) => {
+        let primitive;
+        if (k === -1) {
+          primitive = `$\\ln|x| + kx + C$`;
+        } else {
+          primitive = `$\\frac{x^{k+1}}{k+1} + kx + C$`;
+        }
+        return `
+                        <p class="mb-2">1. Для нахождения первообразной используем правило интегрирования степени $$\\int x^n dx = \\frac{x^{n+1}}{n+1} + C$$ (для $n \\neq -1$) и правило для константы $$\\int c dx = cx + C$$</p>
+                        <p class="mb-2">2. Применим эти правила к функции $f(x) = x^k + k$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$F(x) = \\int (x^k + k) dx$</p>
+                        ${k === -1 ?
+          `<p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$F(x) = \\ln|x| + ${k}x + C$</p>
+                             <p class="text-sm text-gray-600">Примечание: Это случай, когда $k = -1$.</p>` :
+          `<p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$F(x) = \\frac{x^{k+1}}{k+1} + kx + C$</p>`
+        }
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${primitive}</span></p>
+                    `;
+      }
+    },
+    {
+      id: 15,
+      category: 'Геометрия',
+      question: 'Найдите диагональ куба с ребром $(5+k)$ см. Ответ запишите в виде десятичной дроби, округлив ее до сотых при необходимости.',
+      solution: (k) => {
+        const side = 5 + k;
+        let diagonal;
+
+        if (side <= 0) {
+          return `
+                            <p class="mb-2 text-red-600">Некорректное значение k: Длина ребра куба не может быть отрицательной или равна нулю. Проверьте значение k.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (некорректные данные)</span></p>
+                        `;
+        }
+
+        // Diagonal of a cube = a * sqrt(3)
+        diagonal = side * Math.sqrt(3);
+
+        return `
+                        <p class="mb-2">1. Длина ребра куба: $a = 5+k = ${side}$ см.</p>
+                        <p class="mb-2">2. Диагональ куба вычисляется по формуле $D = a\\sqrt{3}$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$D = ${side} \\cdot \\sqrt{3} = ${diagonal.toFixed(2)}$ см.</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${diagonal.toFixed(2)} см</span></p>
+                    `;
+      }
+    },
+    {
+      id: 16,
+      category: 'Геометрия',
+      question: 'Дан радиус сферы $r = 6k$ см. Найдите площадь сферы. Значение $\\pi$ не переводите.',
+      solution: (k) => {
+        const radius = 6 * k;
+        let surfaceArea;
+
+        if (radius <= 0) {
+          return `
+                            <p class="mb-2 text-red-600">Некорректное значение k: Радиус сферы не может быть отрицательным или равен нулю. Проверьте значение k.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (некорректные данные)</span></p>
+                        `;
+        }
+
+        // Surface Area of a sphere = 4 * pi * r^2
+        surfaceArea = 4 * Math.PI * radius**2;
+
+        return `
+                        <p class="mb-2">1. Радиус сферы: $r = 6k = ${radius}$ см.</p>
+                        <p class="mb-2">2. Площадь сферы вычисляется по формуле $S = 4\\pi r^2$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$S = 4\\pi (${radius})^2 = 4\\pi \\cdot ${radius**2} = ${surfaceArea.toFixed(2)}$ см².</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${(surfaceArea / Math.PI).toFixed(2)}\\pi$ см²</span></p>
+                    `;
+      }
+    },
+    {
+      id: 17,
+      category: 'Геометрия',
+      question: 'Два ребра прямоугольного параллелепипеда равны $(7+k)$ см и $(36-k)$ см, а объем параллелепипеда равен $(215+k)$ см$^3$. Найдите третье ребро параллелепипеда. Ответ запишите в виде десятичной дроби, округлив ее до сотых при необходимости.',
+      solution: (k) => {
+        const edge1 = 7 + k;
+        const edge2 = 36 - k;
+        const volume = 215 + k;
+        let edge3;
+
+        if (edge1 <= 0 || edge2 <= 0 || volume <= 0) {
+          return `
+                            <p class="mb-2 text-red-600">Некорректные значения: Длины ребер или объем не могут быть отрицательными или равны нулю. Проверьте значение k.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (некорректные данные)</span></p>
+                        `;
+        }
+
+        if (edge1 * edge2 === 0) {
+          return `
+                            <p class="mb-2 text-red-600">Деление на ноль: Произведение двух ребер равно нулю. Проверьте значение k.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (деление на ноль)</span></p>
+                        `;
+        }
+
+        // Volume of parallelepiped = edge1 * edge2 * edge3
+        // edge3 = Volume / (edge1 * edge2)
+        edge3 = volume / (edge1 * edge2);
+
+        return `
+                        <p class="mb-2">1. Длины двух ребер: $a = 7+k = ${edge1}$ см, $b = 36-k = ${edge2}$ см.</p>
+                        <p class="mb-2">2. Объем параллелепипеда: $V = 215+k = ${volume}$ см$^3$.</p>
+                        <p class="mb-2">3. Формула объема: $V = a \\cdot b \\cdot c$. Выразим третье ребро $c$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$c = \\frac{V}{a \\cdot b} = \\frac{${volume}}{${edge1} \\cdot ${edge2}} = \\frac{${volume}}{${edge1 * edge2}} = ${edge3.toFixed(2)}$ см.</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${edge3.toFixed(2)} см</span></p>
+                    `;
+      }
+    },
+    {
+      id: 18,
+      category: 'Геометрия',
+      question: 'Найдите объем цилиндра, диаметр которого равен $(5 + 3k)$ мм, а высота в 3.7 раза больше радиуса. Ответ округлите до целых.',
+      solution: (k) => {
+        const diameter = 5 + 3 * k;
+        const radius = diameter / 2;
+        const height = 3.7 * radius;
+        let volume;
+
+        if (diameter <= 0) {
+          return `
+                            <p class="mb-2 text-red-600">Некорректное значение k: Диаметр цилиндра не может быть отрицательным или равен нулю. Проверьте значение k.</p>
+                            <p class="font-bold text-lg">Ответ: <span class="text-red-600">Невозможно вычислить (некорректные данные)</span></p>
+                        `;
+        }
+
+        // Volume of cylinder = pi * r^2 * h
+        volume = Math.PI * radius**2 * height;
+
+        return `
+                        <p class="mb-2">1. Диаметр цилиндра: $D = 5 + 3k = ${diameter}$ мм.</p>
+                        <p class="mb-2">2. Радиус цилиндра: $R = D/2 = ${radius}$ мм.</p>
+                        <p class="mb-2">3. Высота цилиндра: $H = 3.7R = 3.7 \\cdot ${radius} = ${height.toFixed(2)}$ мм.</p>
+                        <p class="mb-2">4. Объем цилиндра вычисляется по формуле $V = \\pi R^2 H$:</p>
+                        <p class="mb-4 p-2 bg-gray-100 rounded-md font-mono">$V = \\pi (${radius})^2 \\cdot ${height.toFixed(2)} = ${volume.toFixed(2)}\\pi$ мм$^3$.</p>
+                        <p class="font-bold text-lg">Ответ: <span class="text-green-700">${Math.round(volume)} мм$^3$ (округлено до целых)</span></p>
+                    `;
+      }
+    }
+  ];
+
+  const taskNavContainer = document.getElementById('task-navigation');
+  const taskContentContainer = document.getElementById('task-content');
+  const categoryFiltersContainer = document.getElementById('category-filters');
+  const kInput = document.getElementById('k-input');
+  const applyKButton = document.getElementById('apply-k-button');
+  const currentKDisplay = document.getElementById('current-k-display');
+
+  let currentK = parseInt(kInput.value, 10);
+  let activeTask = 1;
+  let activeCategory = 'Все';
+  let charts = {};
+
+  const categories = ['Все', ...new Set(tasks.map(t => t.category))];
+
+  function updateCurrentK(newK) {
+    currentK = newK;
+    currentKDisplay.textContent = `k = ${currentK}`;
+  }
+
+  function renderNav() {
+    taskNavContainer.innerHTML = '';
+    tasks.forEach(task => {
+      const isVisible = activeCategory === 'Все' || task.category === activeCategory;
+      const button = document.createElement('button');
+      button.textContent = task.id;
+      button.className = `nav-button w-12 h-12 rounded-lg font-bold flex items-center justify-center ${task.id === activeTask ? 'active' : ''} ${isVisible ? 'opacity-100' : 'opacity-30'}`;
+      button.onclick = () => {
+        activeTask = task.id;
+        render();
+      };
+      taskNavContainer.appendChild(button);
+    });
+  }
+
+  function renderCategories() {
+    categoryFiltersContainer.innerHTML = '';
+    categories.forEach(category => {
+      const button = document.createElement('button');
+      button.textContent = category;
+      button.className = `category-button px-3 py-1 rounded-full text-sm font-semibold ${category === activeCategory ? 'active' : ''}`;
+      button.onclick = () => {
+        activeCategory = category;
+        render();
+      };
+      categoryFiltersContainer.appendChild(button);
+    });
+  }
+
+  function renderTask() {
+    const task = tasks.find(t => t.id === activeTask);
+    if (!task) return;
+
+    const solutionContent = typeof task.solution === 'function' ? task.solution(currentK) : task.solution;
+
+    taskContentContainer.innerHTML = `
+                <div class="task-card p-6 rounded-xl">
+                    <h2 class="text-xl font-bold mb-4">Задание ${task.id} <span class="text-sm font-medium text-gray-500 ml-2">(${task.category})</span></h2>
+                    <div class="prose max-w-none mb-6">
+                        ${task.image ? `<img src="${task.image}" alt="Task Image" class="mb-4 mx-auto rounded-md shadow-md">` : ''}
+                        ${task.question}
+                    </div>
+                    <button class="solution-toggle px-4 py-2 rounded-lg font-semibold mb-4" onclick="toggleSolution(this)">Показать решение</button>
+                    <div class="solution-content p-4 rounded-lg hidden">${solutionContent}</div>
+                </div>
+            `;
+
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([taskContentContainer]);
+    }
+
+    // Removed chart rendering calls as they are no longer applicable to the new set of tasks.
+  }
+
+  function toggleSolution(button) {
+    const solutionDiv = button.nextElementSibling;
+    const isHidden = solutionDiv.classList.contains('hidden');
+    if (isHidden) {
+      solutionDiv.classList.remove('hidden');
+      button.textContent = 'Скрыть решение';
+    } else {
+      solutionDiv.classList.add('hidden');
+      button.textContent = 'Показать решение';
+    }
+  }
+
+  function render() {
+    renderNav();
+    renderCategories();
+    renderTask();
+  }
+
+  function destroyChart(id) {
+    if (charts[id]) {
+      charts[id].destroy();
+      delete charts[id];
+    }
+  }
+
+  // Removed renderTask12Chart and renderTask13Chart as they are not applicable to the new set of tasks.
+
+  applyKButton.addEventListener('click', () => {
+    const newKValue = parseInt(kInput.value, 10);
+    if (!isNaN(newKValue) && newKValue > 0) {
+      updateCurrentK(newKValue);
+      render();
+    } else {
+      alert('Пожалуйста, введите корректное положительное число для k.');
+      kInput.value = currentK; // Reset to previous valid value
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+    script.async = true;
+    script.onload = () => {
+      if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+        window.MathJax.startup.promise.then(() => {
+          updateCurrentK(parseInt(kInput.value, 10));
+          render();
+        });
+      } else {
+        console.error('MathJax not fully loaded or configured.');
+        updateCurrentK(parseInt(kInput.value, 10));
+        render();
+      }
+    };
+    script.onerror = () => {
+      console.error('Failed to load MathJax script.');
+      updateCurrentK(parseInt(kInput.value, 10));
+      render();
+    };
+    document.head.appendChild(script);
+
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  });
+
+</script>
 </body>
 </html>
