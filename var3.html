@@ -94,11 +94,21 @@
       background-color: #f2f2f2;
     }
   </style>
+  <script type="module" crossorigin src="/my-vite-multi-page-site/assets/select-navigator-D_c_TUIC.js"></script>
 </head>
 <body class="text-gray-800">
 <div class="container mx-auto p-4 md:p-8">
   <header class="text-center mb-8">
     <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Интерактивный вариант заданий</h1>
+    <select name="pages" id="page-selector">
+      <option value="">Выберите страницу</option>
+      <option value="/my-vite-multi-page-site/index.html">Вариант 1</option>
+      <option value="/my-vite-multi-page-site/var2.html">Вариант 2</option>
+      <option value="/my-vite-multi-page-site/var3.html">Вариант 3</option>
+      <option value="/my-vite-multi-page-site/var4.html">Вариант 4</option>
+    </select>
+
+
     <p class="text-lg text-gray-600 mt-2">Все расчеты выполнены с учетом <code class="bg-gray-200 text-gray-800 font-bold px-2 py-1 rounded"><span id="current-k-display">k = 3</span></code></p>
     <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
       <label for="k-input" class="text-gray-700 font-semibold">Изменить k:</label>
